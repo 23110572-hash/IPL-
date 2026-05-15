@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IPL Cricket Analytics | Premium Dashboard</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
+    
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --surface-color: #1e293b;
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --border-color: #334155;
+            --accent-navy: #ffffff;
+            --accent-gold: #c29b62;
+            --accent-gold-light: rgba(194, 155, 98, 0.15);
+            --shadow-subtle: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+            --shadow-hover: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.04);
+            --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            --font-display: 'Playfair Display', serif;
+            --font-sans: 'Inter', sans-serif;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            background-color: var(--bg-color); color: var(--text-primary);
+            font-family: var(--font-sans); line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .dashboard-container {
+            max-width: 1600px; margin: 0 auto; padding: 3rem 2rem;
+            display: flex; flex-direction: column; gap: 2.5rem;
+        }
+
+        header { text-align: center; margin-bottom: 1rem; padding-bottom: 2rem; border-bottom: 1px solid var(--border-color); }
+        header h1 { font-family: var(--font-display); font-size: 2.75rem; font-weight: 700; color: var(--accent-navy); margin-bottom: 0.5rem; }
+        header p { color: var(--text-secondary); font-size: 1.125rem; font-weight: 300; text-transform: uppercase; }
+
+        .section-divider { display: flex; align-items: center; margin: 2rem 0; gap: 1rem; }
+        .section-divider::before, .section-divider::after { content: ""; flex: 1; height: 1px; background-color: var(--border-color); }
+        .section-divider h2 { font-family: var(--font-display); font-style: italic; color: var(--accent-gold); font-size: 1.5rem; font-weight: 600; }
+
+        .controls-section { display: flex; justify-content: center; align-items: center; gap: 1rem; margin-bottom: 0.5rem; }
+        .controls-section label { font-weight: 500; color: var(--text-secondary); font-size: 0.95rem; text-transform: uppercase; }
+        
+        select {
+            appearance: none; background-color: var(--surface-color); border: 1px solid var(--border-color);
+            border-radius: 8px; padding: 0.75rem 3rem 0.75rem 1.25rem; font-family: var(--font-sans);
+            font-size: 1rem; font-weight: 600; color: var(--accent-navy); cursor: pointer; box-shadow: var(--shadow-subtle);
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23ffffff'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+            background-repeat: no-repeat; background-position: right 1rem center; background-size: 1rem;
+        }
+
+        .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; }
+        .kpi-card {
+            background-color: var(--surface-color); border: 1px solid var(--border-color); border-radius: 12px;
+            padding: 2rem 1.5rem; display: flex; flex-direction: column; gap: 0.5rem; box-shadow: var(--shadow-subtle);
+            transition: var(--transition-smooth); position: relative; overflow: hidden;
+        }
+        .kpi-card::before {
+            content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 4px;
+            background: linear-gradient(90deg, #F15BB5, #00BBF9); opacity: 0; transition: var(--transition-smooth);
+        }
+        .kpi-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-hover); }
+        .kpi-card:hover::before { opacity: 1; }
+        .kpi-title { font-size: 0.875rem; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 1px; }
+        .kpi-value { font-family: var(--font-display); font-size: 2.25rem; font-weight: 600; color: var(--accent-navy); line-height: 1.2; }
+        .kpi-subtext { font-size: 0.875rem; color: #F15BB5; font-weight: 600; margin-top: auto; }
+
+        .charts-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 2rem; margin-top: 1rem; }
+        .chart-card {
+            background-color: var(--surface-color); border: 1px solid var(--border-color); border-radius: 12px;
+            padding: 2rem; box-shadow: var(--shadow-subtle); height: 450px; display: flex; flex-direction: column;
+        }
+        .chart-header { margin-bottom: 1.5rem; }
+        .chart-title { font-family: var(--font-display); font-size: 1.5rem; font-weight: 600; color: var(--accent-navy); }
+        .chart-container { position: relative; flex-grow: 1; width: 100%; min-height: 0; }
+
+        #loading-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: #0f172a; z-index: 1000;
+            display: flex; flex-direction: column; justify-content: center; align-items: center; transition: opacity 0.5s ease;
+        }
+
+        .spinner {
+            width: 50px; height: 50px; border: 4px solid var(--border-color); border-top-color: #00BBF9;
+            border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 1.5rem auto;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        #file-selector-container {
+            text-align: center; background: white; padding: 4rem; border-radius: 16px;
+            box-shadow: var(--shadow-hover); border: 1px solid var(--border-color);
+        }
+        
+        .upload-btn {
+            padding: 1rem 2.5rem; background: linear-gradient(135deg, #9B5DE5, #00BBF9); color: white;
+            border: none; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 1.1rem;
+            transition: var(--transition-smooth); font-family: var(--font-sans); display: inline-flex; align-items: center; gap: 10px;
+        }
+        .upload-btn:hover { transform: translateY(-3px); box-shadow: 0 10px 20px rgba(0, 187, 249, 0.3); }
+
+        @media (max-width: 1024px) { .charts-grid { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+
+    <div id="loading-overlay">
+        <div id="loading-spinner-container" style="text-align: center;">
+            <div class="spinner"></div>
+            <div id="loading-text" style="font-weight: 500; font-size: 1.2rem;">Fetching 70MB+ IPL Dataset...</div>
+            <div id="progress-text" style="margin-top: 15px; font-weight: 600; color: #00BBF9; font-size: 1.2rem; font-family: var(--font-display);">This will just take a few seconds.</div>
+        </div>
+    </div>
+
+    <div class="dashboard-container">
+        <header>
+            <h1>IPL Advanced Analytics</h1>
+            <p>Vibrant & Dynamic Performance Dashboard</p>
+        </header>
+
+        <section class="controls-section">
+            <label for="seasonSelect">Analyze Season:</label>
+            <select id="seasonSelect" disabled><option value="">Loading Data...</option></select>
+        </section>
+
+        <!-- KPI Summary Cards -->
+        <section class="kpi-grid">
+            <div class="kpi-card"><span class="kpi-title">Tournament Winner</span><span class="kpi-value" id="kpi-winner">--</span></div>
+            <div class="kpi-card"><span class="kpi-title">Total Matches Played</span><span class="kpi-value" id="kpi-matches">--</span></div>
+            <div class="kpi-card"><span class="kpi-title">Total Runs Scored</span><span class="kpi-value" id="kpi-runs">--</span></div>
+            <div class="kpi-card">
+                <span class="kpi-title">Orange Cap (Highest Scorer)</span>
+                <span class="kpi-value" id="kpi-scorer" style="font-size: 1.75rem;">--</span>
+                <span class="kpi-subtext" id="kpi-scorer-runs"></span>
+            </div>
+        </section>
+
+        <div class="section-divider"><h2>Global History (All Seasons)</h2></div>
+
+        <section class="charts-grid">
+            <div class="chart-card"><div class="chart-header"><h2 class="chart-title">Runs Evolution Across Seasons</h2></div><div class="chart-container"><canvas id="runsChart"></canvas></div></div>
+            <div class="chart-card"><div class="chart-header"><h2 class="chart-title">Sixes Hit Per Season</h2></div><div class="chart-container"><canvas id="sixesChart"></canvas></div></div>
+        </section>
+
+        <div class="section-divider"><h2>Deep Analysis (<span id="current-season-label">Selected</span> Season)</h2></div>
+
+        <!-- Season Specific Visualizations -->
+        <section class="charts-grid">
+            <div class="chart-card"><div class="chart-header"><h2 class="chart-title">Toss Impact</h2></div><div class="chart-container"><canvas id="tossChart"></canvas></div></div>
+            <div class="chart-card"><div class="chart-header"><h2 class="chart-title">Phase Impact (Avg Per Match)</h2></div><div class="chart-container"><canvas id="phaseChart"></canvas></div></div>
+            <div class="chart-card"><div class="chart-header"><h2 class="chart-title">Top 10 Performers: Batting</h2></div><div class="chart-container"><canvas id="topBattersChart"></canvas></div></div>
+            <div class="chart-card"><div class="chart-header"><h2 class="chart-title">Top 10 Performers: Bowling</h2></div><div class="chart-container"><canvas id="topBowlersChart"></canvas></div></div>
+            <div class="chart-card"><div class="chart-header"><h2 class="chart-title">Boundary vs. Strike Rotation</h2></div><div class="chart-container"><canvas id="boundaryChart"></canvas></div></div>
+            <div class="chart-card"><div class="chart-header"><h2 class="chart-title">Dot Ball % vs. Win Rate</h2></div><div class="chart-container"><canvas id="scatterChart"></canvas></div></div>
+        </section>
+    </div>
+
+    <script>
+        const state = {
+            seasons: {}, // Stores ALL aggregated data per season
+            chartInstances: {} // Track charts to update/destroy them dynamically
+        };
+
+        const DOM = {
+            loadingOverlay: document.getElementById('loading-overlay'), seasonSelect: document.getElementById('seasonSelect'),
+            kpiWinner: document.getElementById('kpi-winner'), kpiMatches: document.getElementById('kpi-matches'),
+            kpiRuns: document.getElementById('kpi-runs'), kpiScorer: document.getElementById('kpi-scorer'),
+            kpiScorerRuns: document.getElementById('kpi-scorer-runs'), currentSeasonLabel: document.getElementById('current-season-label')
+        };
+
+        Chart.defaults.font.family = "'Inter', sans-serif"; Chart.defaults.color = '#94a3b8'; Chart.defaults.scale.grid.color = '#334155';
+
+        function initSeasonStats(season) {
+            if (!state.seasons[season]) {
+                state.seasons[season] = {
+                    totalRuns: 0, totalSixes: 0, matches: new Set(), batters: {}, bowlers: {}, lastMatchTimestamp: 0, tournamentWinner: null,
+                    toss: { wonAndWonMatch: 0, lostTossWonMatch: 0, matchProcessed: new Set() },
+                    phases: { 'Powerplay (0-5)': { runs: 0, wickets: 0 }, 'Middle (6-14)': { runs: 0, wickets: 0 }, 'Death (15-19)': { runs: 0, wickets: 0 } },
+                    runs: { boundaries: 0, running: 0 }, teams: {}
+                };
+            }
+        }
+
+        function initTeam(season, teamName) {
+            if (!state.seasons[season].teams[teamName]) {
+                state.seasons[season].teams[teamName] = { matchesPlayed: new Set(), matchesWon: new Set(), ballsFaced: 0, dotBallsFaced: 0 };
+            }
+        }
+
+        function normalizeSeason(s) {
+            if (s === '2007/08') return '2008';
+            if (s === '2009/10') return '2010';
+            if (s === '2020/21') return '2020';
+            return s;
+        }
+
+        // Auto-load CSV file directly from the server
+        document.addEventListener('DOMContentLoaded', () => {
+            const csvUrl = '../IPL.csv';
+            
+            Papa.parse(csvUrl, {
+                download: true,
+                header: true,
+                skipEmptyLines: true,
+                complete: function(results) {
+                    try {
+                        document.getElementById('loading-text').textContent = "Crunching Numbers... Almost Done!";
+                        
+                        // Process all rows synchronously (extremely fast)
+                        for (let i = 0; i < results.data.length; i++) {
+                            processRow(results.data[i]);
+                        }
+                        
+                        document.getElementById('loading-text').textContent = "Rendering Dynamic Dashboard...";
+                        setTimeout(finalizeSetup, 100); 
+                    } catch (e) {
+                        console.error("Error processing data:", e);
+                        document.getElementById('loading-text').innerHTML = "Error processing data.";
+                    }
+                },
+                error: function(err) {
+                    console.error("Error parsing CSV:", err);
+                    document.getElementById('loading-text').innerHTML = "Error loading data. Ensure the Python server is running.";
+                }
+            });
+        });
+
+        function processRow(row) {
+            const season = normalizeSeason(row.season); const matchId = row.match_id;
+            if (!season || !matchId) return;
+
+            initSeasonStats(season);
+            const s = state.seasons[season];
+            
+            const runsTotal = parseInt(row.runs_total) || 0; const runsBatter = parseInt(row.runs_batter) || 0;
+            const extrasWides = parseInt(row.extras_wides) || 0; const extrasNoballs = parseInt(row.extras_noballs) || 0;
+            
+            s.totalRuns += runsTotal;
+            if (runsBatter === 6) s.totalSixes += 1;
+            s.matches.add(matchId);
+            
+            // Tournament Winner logic
+            if (row.date && row.winner && row.winner !== 'NA') {
+                const matchDate = new Date(row.date).getTime();
+                if (matchDate > s.lastMatchTimestamp) { s.lastMatchTimestamp = matchDate; s.tournamentWinner = row.winner; }
+            }
+
+            // Toss Impact
+            if (row.toss_winner && row.winner && row.winner !== 'NA' && !s.toss.matchProcessed.has(matchId)) {
+                s.toss.matchProcessed.add(matchId);
+                if (row.toss_winner === row.winner) s.toss.wonAndWonMatch++; else s.toss.lostTossWonMatch++;
+                initTeam(season, row.winner); s.teams[row.winner].matchesWon.add(matchId);
+                if (row.team1) { initTeam(season, row.team1); s.teams[row.team1].matchesPlayed.add(matchId); }
+                if (row.team2) { initTeam(season, row.team2); s.teams[row.team2].matchesPlayed.add(matchId); }
+            }
+
+            // Phase Impact
+            const over = parseInt(row.over);
+            if (!isNaN(over)) {
+                let phase = 'Death (15-19)'; if (over <= 5) phase = 'Powerplay (0-5)'; else if (over <= 14) phase = 'Middle (6-14)';
+                s.phases[phase].runs += runsTotal;
+                if (row.wicket_kind) s.phases[phase].wickets += 1;
+            }
+
+            // Batters
+            if (row.batter) {
+                if (!s.batters[row.batter]) s.batters[row.batter] = { runs: 0, balls: 0 };
+                s.batters[row.batter].runs += runsBatter;
+                if (extrasWides === 0) s.batters[row.batter].balls += 1;
+            }
+
+            // Bowlers
+            if (row.bowler) {
+                if (!s.bowlers[row.bowler]) s.bowlers[row.bowler] = { wickets: 0, runsConceded: 0, balls: 0 };
+                s.bowlers[row.bowler].runsConceded += (runsTotal - (parseInt(row.extras_byes) || 0) - (parseInt(row.extras_legbyes) || 0));
+                if (extrasWides === 0 && extrasNoballs === 0) s.bowlers[row.bowler].balls += 1;
+                if (row.wicket_kind && !['run out', 'retired hurt', 'obstructing the field'].includes(row.wicket_kind.toLowerCase())) {
+                    s.bowlers[row.bowler].wickets += 1;
+                }
+            }
+
+            // Boundaries vs Running
+            if (runsBatter === 4 || runsBatter === 6) s.runs.boundaries += runsBatter;
+            else if (runsBatter > 0) s.runs.running += runsBatter;
+
+            // Dot ball tracking
+            const batTeam = row.batting_team;
+            if (batTeam) {
+                initTeam(season, batTeam);
+                if (extrasWides === 0) {
+                    s.teams[batTeam].ballsFaced += 1;
+                    if (runsBatter === 0 && runsTotal === 0) s.teams[batTeam].dotBallsFaced += 1;
+                }
+            }
+        }
+
+        function finalizeSetup() {
+            const sortedSeasons = Object.keys(state.seasons).sort();
+            DOM.seasonSelect.innerHTML = '';
+            sortedSeasons.forEach(season => { DOM.seasonSelect.appendChild(new Option(season, season)); });
+            DOM.seasonSelect.disabled = false;
+            
+            // Re-render advanced charts when season changes
+            DOM.seasonSelect.addEventListener('change', (e) => {
+                updateDashboardForSeason(e.target.value);
+            });
+
+            // Global Charts (render once)
+            renderGlobalCharts(sortedSeasons);
+            
+            // Initial Dashboard load
+            const initialSeason = sortedSeasons[sortedSeasons.length - 1];
+            DOM.seasonSelect.value = initialSeason;
+            updateDashboardForSeason(initialSeason);
+
+            DOM.loadingOverlay.style.opacity = '0';
+            setTimeout(() => DOM.loadingOverlay.style.display = 'none', 500);
+        }
+
+        function renderGlobalCharts(seasonsList) {
+            const runsData = seasonsList.map(s => state.seasons[s].totalRuns);
+            const sixesData = seasonsList.map(s => state.seasons[s].totalSixes);
+            
+            const ctxRuns = document.getElementById('runsChart').getContext('2d');
+            const gradRuns = ctxRuns.createLinearGradient(0,0,0,400); 
+            gradRuns.addColorStop(0, 'rgba(155, 93, 229, 0.3)'); 
+            gradRuns.addColorStop(1, 'rgba(155, 93, 229, 0)');
+
+            new Chart(ctxRuns, {
+                type: 'line', data: { labels: seasonsList, datasets: [{ label: 'Total Runs Scored', data: runsData, borderColor: '#9B5DE5', backgroundColor: gradRuns, borderWidth: 3, pointBackgroundColor: '#00BBF9', pointRadius: 4, fill: true, tension: 0.4 }] },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { display: false } } } }
+            });
+
+            const gradSixes = ctxRuns.createLinearGradient(0,0,0,400); gradSixes.addColorStop(0, '#00BBF9'); gradSixes.addColorStop(1, '#00F5D4');
+            new Chart(document.getElementById('sixesChart'), {
+                type: 'bar', data: { labels: seasonsList, datasets: [{ label: 'Total Sixes Hit', data: sixesData, backgroundColor: gradSixes, borderRadius: 6 }] },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { display: false } } } }
+            });
+        }
+
+        function updateDashboardForSeason(season) {
+            DOM.currentSeasonLabel.textContent = season;
+            const s = state.seasons[season]; if (!s) return;
+            
+            // 1. Update KPIs
+            const format = (num) => new Intl.NumberFormat().format(num);
+            let topBatter = ""; let topRuns = -1;
+            for (const [batter, data] of Object.entries(s.batters)) { if (data.runs > topRuns) { topRuns = data.runs; topBatter = batter; } }
+
+            DOM.kpiWinner.textContent = s.tournamentWinner || "N/A";
+            DOM.kpiMatches.textContent = format(s.matches.size);
+            DOM.kpiRuns.textContent = format(s.totalRuns);
+            DOM.kpiScorer.textContent = topBatter;
+            DOM.kpiScorerRuns.textContent = `${format(topRuns)} Runs Scored`;
+
+            // Vibrant Color Palettes
+            const VIBRANT_ARRAY = ['#F15BB5', '#9B5DE5', '#00BBF9', '#00F5D4', '#FEE440', '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#D4A5A5'];
+            
+            // 2. Toss Impact
+            if (state.chartInstances.toss) state.chartInstances.toss.destroy();
+            state.chartInstances.toss = new Chart(document.getElementById('tossChart'), {
+                type: 'doughnut', data: { labels: ['Toss Won, Match Won', 'Toss Won, Match Lost'], datasets: [{ data: [s.toss.wonAndWonMatch, s.toss.lostTossWonMatch], backgroundColor: ['#00F5D4', '#F15BB5'], borderWidth: 0, hoverOffset: 8 }] },
+                options: { responsive: true, maintainAspectRatio: false, cutout: '70%', plugins: { legend: { position: 'bottom' } } }
+            });
+
+            // 3. Phase Impact
+            if (state.chartInstances.phase) state.chartInstances.phase.destroy();
+            const totalMatches = s.matches.size || 1; const phases = Object.keys(s.phases);
+            const phaseRuns = phases.map(p => (s.phases[p].runs / totalMatches).toFixed(1)); const phaseWkts = phases.map(p => (s.phases[p].wickets / totalMatches).toFixed(2));
+            state.chartInstances.phase = new Chart(document.getElementById('phaseChart'), {
+                type: 'bar', data: { labels: phases, datasets: [ { label: 'Avg Runs', data: phaseRuns, backgroundColor: '#00BBF9', borderRadius: 4, yAxisID: 'y' }, { label: 'Avg Wickets', data: phaseWkts, backgroundColor: '#FF006E', borderRadius: 4, yAxisID: 'y1' } ] },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } }, scales: { x: { grid: { display: false } }, y: { type: 'linear', position: 'left', title: {display:true, text:'Runs'} }, y1: { type: 'linear', position: 'right', grid: {drawOnChartArea: false}, title: {display:true, text:'Wickets'} } } }
+            });
+
+            // 4. Batters
+            if (state.chartInstances.batters) state.chartInstances.batters.destroy();
+            const sortedBatters = Object.entries(s.batters).map(([name, data]) => ({ name, runs: data.runs, sr: ((data.runs / (data.balls||1)) * 100).toFixed(1) })).sort((a, b) => b.runs - a.runs).slice(0, 10);
+            state.chartInstances.batters = new Chart(document.getElementById('topBattersChart'), {
+                type: 'bar', data: { labels: sortedBatters.map(b => b.name), datasets: [{ label: 'Total Runs', data: sortedBatters.map(b => b.runs), backgroundColor: VIBRANT_ARRAY, borderRadius: 4 }] },
+                options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: {display: false}, tooltip: { callbacks: { afterLabel: (ctx) => `Strike Rate: ${sortedBatters[ctx.dataIndex].sr}` } } }, scales: { x: { grid: { display: false } }, y: { grid: { display: false } } } }
+            });
+
+            // 5. Bowlers
+            if (state.chartInstances.bowlers) state.chartInstances.bowlers.destroy();
+            const sortedBowlers = Object.entries(s.bowlers).map(([name, data]) => ({ name, wkts: data.wickets, econ: ((data.runsConceded / (data.balls||1)) * 6).toFixed(2) })).sort((a, b) => b.wkts - a.wkts).slice(0, 10);
+            state.chartInstances.bowlers = new Chart(document.getElementById('topBowlersChart'), {
+                type: 'bar', data: { labels: sortedBowlers.map(b => b.name), datasets: [{ label: 'Total Wickets', data: sortedBowlers.map(b => b.wkts), backgroundColor: VIBRANT_ARRAY.slice().reverse(), borderRadius: 4 }] },
+                options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: {display: false}, tooltip: { callbacks: { afterLabel: (ctx) => `Economy: ${sortedBowlers[ctx.dataIndex].econ}` } } }, scales: { x: { grid: { display: false } }, y: { grid: { display: false } } } }
+            });
+
+            // 6. Boundary vs Running
+            if (state.chartInstances.boundary) state.chartInstances.boundary.destroy();
+            state.chartInstances.boundary = new Chart(document.getElementById('boundaryChart'), {
+                type: 'doughnut', data: { labels: ['Boundaries (4s & 6s)', 'Running (1s, 2s, 3s)'], datasets: [{ data: [s.runs.boundaries, s.runs.running], backgroundColor: ['#9B5DE5', '#FEE440'], borderWidth: 0, hoverOffset: 8 }] },
+                options: { responsive: true, maintainAspectRatio: false, cutout: '50%', plugins: { legend: { position: 'bottom' } } }
+            });
+
+            // 7. Scatter Plot
+            if (state.chartInstances.scatter) state.chartInstances.scatter.destroy();
+            const scatterData = []; let sumX=0, sumY=0, sumXY=0, sumX2=0, n=0;
+            Object.entries(s.teams).forEach(([team, data]) => {
+                if (data.matchesPlayed.size >= 1) { // Removed strict threshold so all teams in a season show
+                    const winPct = (data.matchesWon.size / data.matchesPlayed.size) * 100; const dotPct = (data.dotBallsFaced / data.ballsFaced) * 100;
+                    scatterData.push({ x: dotPct, y: winPct, team: team });
+                    sumX += dotPct; sumY += winPct; sumXY += dotPct * winPct; sumX2 += dotPct * dotPct; n++;
+                }
+            });
+
+            let slope = 0, intercept = 0, trendlineData = [];
+            if (n > 1) {
+                slope = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX); intercept = (sumY - slope * sumX) / n;
+                const minX = Math.min(...scatterData.map(d => d.x)); const maxX = Math.max(...scatterData.map(d => d.x));
+                trendlineData = [{x: minX, y: slope * minX + intercept}, {x: maxX, y: slope * maxX + intercept}];
+            }
+
+            state.chartInstances.scatter = new Chart(document.getElementById('scatterChart'), {
+                type: 'scatter', data: { datasets: [
+                    { label: 'Teams', data: scatterData, backgroundColor: '#4ECDC4', pointBackgroundColor: '#00F5D4', borderColor: '#1e293b', borderWidth: 1, pointRadius: 8, pointHoverRadius: 10 },
+                    { label: 'Trendline', data: trendlineData, type: 'line', borderColor: '#FF006E', borderWidth: 3, borderDash: [5, 5], pointRadius: 0, fill: false }
+                ] },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' }, tooltip: { callbacks: { label: (ctx) => { if (ctx.datasetIndex === 1) return 'Trendline'; return `${ctx.raw.team}: Dot ${ctx.raw.x.toFixed(1)}% | Win ${ctx.raw.y.toFixed(1)}%`; } } } }, scales: { x: { title: {display: true, text: 'Dot Ball Percentage (%)'} }, y: { title: {display: true, text: 'Win Percentage (%)'} } } }
+            });
+        }
+    </script>
+</body>
+</html>
