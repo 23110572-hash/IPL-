@@ -116,9 +116,18 @@
 <body>
 
     <div id="loading-overlay">
-        <div id="loading-spinner-container" style="text-align: center;">
+        <div id="file-selector-container">
+            <h2 style="font-family: var(--font-display); color: #0f172a; margin-bottom: 1rem;">Upload IPL Dataset</h2>
+            <p style="color: #334155; margin-bottom: 2rem;">Please select the IPL.csv file to generate the dashboard.</p>
+            <input type="file" id="csvFileInput" accept=".csv" style="display: none;">
+            <button class="upload-btn" onclick="document.getElementById('csvFileInput').click()">
+                <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+                Select IPL.csv
+            </button>
+        </div>
+        <div id="loading-spinner-container" style="text-align: center; display: none;">
             <div class="spinner"></div>
-            <div id="loading-text" style="font-weight: 500; font-size: 1.2rem;">Fetching 70MB+ IPL Dataset...</div>
+            <div id="loading-text" style="font-weight: 500; font-size: 1.2rem; color: white;">Crunching 70MB+ IPL Dataset...</div>
             <div id="progress-text" style="margin-top: 15px; font-weight: 600; color: #00BBF9; font-size: 1.2rem; font-family: var(--font-display);">This will just take a few seconds.</div>
         </div>
     </div>
@@ -205,34 +214,39 @@
             return s;
         }
 
-        // Auto-load CSV file directly from the server
+        // Use file upload to process CSV locally
         document.addEventListener('DOMContentLoaded', () => {
-            const csvUrl = '../IPL.csv';
-            
-            Papa.parse(csvUrl, {
-                download: true,
-                header: true,
-                skipEmptyLines: true,
-                complete: function(results) {
-                    try {
-                        document.getElementById('loading-text').textContent = "Crunching Numbers... Almost Done!";
-                        
-                        // Process all rows synchronously (extremely fast)
-                        for (let i = 0; i < results.data.length; i++) {
-                            processRow(results.data[i]);
+            document.getElementById('csvFileInput').addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (!file) return;
+
+                document.getElementById('file-selector-container').style.display = 'none';
+                document.getElementById('loading-spinner-container').style.display = 'block';
+
+                Papa.parse(file, {
+                    header: true,
+                    skipEmptyLines: true,
+                    complete: function(results) {
+                        try {
+                            document.getElementById('loading-text').textContent = "Crunching Numbers... Almost Done!";
+                            
+                            // Process all rows synchronously (extremely fast)
+                            for (let i = 0; i < results.data.length; i++) {
+                                processRow(results.data[i]);
+                            }
+                            
+                            document.getElementById('loading-text').textContent = "Rendering Dynamic Dashboard...";
+                            setTimeout(finalizeSetup, 100); 
+                        } catch (e) {
+                            console.error("Error processing data:", e);
+                            document.getElementById('loading-text').innerHTML = "Error processing data.";
                         }
-                        
-                        document.getElementById('loading-text').textContent = "Rendering Dynamic Dashboard...";
-                        setTimeout(finalizeSetup, 100); 
-                    } catch (e) {
-                        console.error("Error processing data:", e);
-                        document.getElementById('loading-text').innerHTML = "Error processing data.";
+                    },
+                    error: function(err) {
+                        console.error("Error parsing CSV:", err);
+                        document.getElementById('loading-text').innerHTML = "Error parsing file.";
                     }
-                },
-                error: function(err) {
-                    console.error("Error parsing CSV:", err);
-                    document.getElementById('loading-text').innerHTML = "Error loading data. Ensure the Python server is running.";
-                }
+                });
             });
         });
 
