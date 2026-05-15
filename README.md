@@ -1,6 +1,6 @@
-# IPL Data Analytics Project 🏏
+# IPL Data Analytics 🏏
 
-This project is a comprehensive data analysis of the Indian Premier League (IPL) ball-by-ball dataset (spanning from 2008 to 2025). The goal is to clean the dataset, uncover statistical insights, discover a "secret winning strategy," and automatically generate a professional PowerPoint presentation of the findings.
+This project is a comprehensive data analysis of the Indian Premier League (IPL) ball-by-ball dataset (spanning from 2008 to 2026). The goal is to clean the dataset, uncover statistical insights, discover a "secret winning strategy".
 
 ## 🚀 Project Overview
 
@@ -26,43 +26,17 @@ While boundaries (fours and sixes) are entertaining, we wanted to find a deeper 
 - **The Result**: We found a strong correlation proving that teams that waste fewer balls (lower dot ball percentage) consistently win more matches. Strike rotation is a hidden key to IPL success!
 
 ### Phase 4: Telling the Story (Visualization & Presentation)
-Nobody wants to read raw CSV files. We used Python to:
-1. Generate beautiful, color-coded charts for all the findings in Phases 2 and 3.
-2. Programmatically generate a slide deck (`IPL_Analysis_Presentation.pptx`) using `python-pptx`, summarizing the insights and explaining the secret strategy simply to team owners.
-
----
 
 ## 📂 File Structure & Generated Artifacts
 
 ### Scripts
 - `ipl_analysis.py`: The core data engine. Cleans the data, runs the math, and generates the charts.
-- `create_ppt.py`: The presentation engine. Takes the generated charts and compiles them into a PowerPoint slide deck.
-- `check_data.py`: A quick diagnostic script used to explore dataset boundaries, total matches, and verify unique team names.
+
 
 ### Outputs
 - `01_toss_impact.png`: A pie chart showing the impact of winning the toss.
 - `02_phase_impact.png`: A bar chart comparing total runs and wickets across the Powerplay, Middle, and Death overs.
 - `03_top_performers.png`: Horizontal bar charts ranking the top 10 historical batters and bowlers.
 - `04_strike_rotation_insight.png`: A scatter plot with a trendline proving the correlation between Dot Ball % and Win %.
-- **`IPL_Analysis_Presentation.pptx`**: The final deliverable. A 6-slide presentation summarizing all findings.
 
----
 
-## 🛠️ How to Run
-
-1. **Install Dependencies:**
-   Ensure you have Python installed, then run:
-   ```bash
-   pip install pandas matplotlib seaborn scipy python-pptx
-   ```
-
-2. **Run the Analysis Pipeline:**
-   *(Note: On Windows PowerShell, it is recommended to force UTF-8 encoding to properly display terminal checkmarks and emojis).*
-   ```powershell
-   $env:PYTHONIOENCODING="utf-8"
-   python ipl_analysis.py
-   python create_ppt.py
-   ```
-
-3. **View the Results:**
-   Open `IPL_Analysis_Presentation.pptx` to view the final pitch!
