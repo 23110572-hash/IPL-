@@ -27,16 +27,41 @@ While boundaries (fours and sixes) are entertaining, we wanted to find a deeper 
 
 ### Phase 4: Telling the Story (Visualization & Presentation)
 
+## 🎯 Interactive Dashboard
+
+We built an advanced interactive dashboard that brings the data to life! The dashboard features:
+
+✨ **Live Analytics Dashboard** - Deployed on Vercel
+- **URL**: [https://ipl-neon-pi.vercel.app/]
+- **Season-by-Season Analysis**: Filter and analyze any IPL season
+- **Key Metrics**:
+  - Tournament Winner
+  - Total Matches Played
+  - Total Runs Scored
+  - Orange Cap Holder (Highest Scorer)
+- **Advanced Visualizations**:
+  - Runs Evolution Across Seasons (Line Chart)
+  - Sixes Hit Per Season (Bar Chart)
+  - Toss Impact Analysis (Doughnut Chart)
+  - Phase Impact - Powerplay vs Middle vs Death (Dual-axis Bar Chart)
+  - Top 10 Batters (Bar Chart)
+  - Top 10 Bowlers (Bar Chart)
+  - Boundary vs Strike Rotation Analysis
+  - Dot Ball % vs Win Rate (Scatter Plot)
+
+The dashboard is **fully functional** and processes 280,000+ ball-by-ball records in real-time using JavaScript with Chart.js for beautiful visualizations.
+
 ## 📂 File Structure & Generated Artifacts
 
 ### Scripts
 - `ipl_analysis.py`: The core data engine. Cleans the data, runs the math, and generates the charts.
 
+### Web Applications
+- `index.html`: Interactive dashboard application (deployed on Vercel)
 
 ### Outputs
 - `01_toss_impact.png`: A pie chart showing the impact of winning the toss.
 - `02_phase_impact.png`: A bar chart comparing total runs and wickets across the Powerplay, Middle, and Death overs.
 - `03_top_performers.png`: Horizontal bar charts ranking the top 10 historical batters and bowlers.
 - `04_strike_rotation_insight.png`: A scatter plot with a trendline proving the correlation between Dot Ball % and Win %.
-
 
